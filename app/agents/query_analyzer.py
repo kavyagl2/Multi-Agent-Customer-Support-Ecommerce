@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 import instructor
-from langchain_groq import ChatGroq
+from groq import Groq
+
 
 class QueryIntent(BaseModel):
     query_type: str = Field(description="Type of query (e.g., 'transaction_lookup', 'product_info')")
@@ -11,8 +12,8 @@ class QueryIntent(BaseModel):
 
 class QueryAnalyzer:
     def __init__(self, groq_api_key: str):
-        self.groq_client = ChatGroq(api_key=groq_api_key)
-        self.instructor_client = instructor.patch(self.groq_client)
+        self.groq_client = Groq(api_key=groq_api_key)
+        self.instructor_client = instructor.from_groq(self.groq_client,mode=instructor.Mode.JSON)
     
     def analyze_query(self, query: str, user_context: Dict) -> QueryIntent:
         prompt = f"""Analyze the following user query and context:
@@ -27,8 +28,8 @@ class QueryAnalyzer:
         
         Available tables: users, products, transactions, reviews"""
         
-        return self.instructor_client(
-            model="mixtral-8x7b-32768",
+        return self.instructor_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
             response_model=QueryIntent,
             messages=[{"role": "user", "content": prompt}]
         )

@@ -1,6 +1,6 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Optional, Dict, Any
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -26,4 +26,4 @@ class TokenData(BaseModel):
 
 class QueryRequest(BaseModel):
     query: str
-    context: Optional[Dict] = None
+    #context: Optional[Dict[str, Any]] = Field(default_factory=dict)

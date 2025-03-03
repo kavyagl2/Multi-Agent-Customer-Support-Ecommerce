@@ -14,6 +14,7 @@ from .auth.auth_handler import (
     get_password_hash
 )
 from .config import settings
+from sqlalchemy import text
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -77,29 +78,40 @@ async def process_query(
         # Analyze query
         user_context = {
             "user_id": current_user.user_id,
-            "email": current_user.email,
-            **(request.context or {})
+            "email": current_user.email
         }
+        """print(request.context)
+        if request.context:
+            user_context.update(request.context)"""
+        
         query_intent = query_analyzer.analyze_query(request.query, user_context)
+        print(query_intent)
         
         # Generate SQL
         sql_query = sql_generator.generate_sql(query_intent, current_user.user_id)
-        
-        # Execute query
-        result = db.execute(sql_query.query, sql_query.parameters).fetchall()
-        results_dict = [dict(row) for row in result]
-        
+        print(sql_query)
+
+        # Convert to SQLAlchemy-compatible format before execution
+        sqlalchemy_query, params = sql_query.to_sqlalchemy()
+
+        # Execute safely using SQLAlchemy's parameterized query execution
+        result = db.execute(sqlalchemy_query, params).fetchall()
+        print(result)
+        results_dict = [row for row in result]
+        print(results_dict)
+                
         # Format response
         response = response_formatter.format_response(
             request.query,
-            results_dict,
+            result, #results_dict,
             user_context
         )
+        print(response)
         
-        return response
+        return response.message
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Currently, we don't have relevant data to process your query. Please try again later.")
 
 if __name__ == "__main__":
     import uvicorn
